@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Mine Sweeper with Flagging</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #222;
+      color: white;
+      text-align: center;
+    }
+    h1 {
+      margin-top: 20px;
+    }
+    #controls {
+      margin: 10px;
+    }
+    select, button {
+      padding: 5px 10px;
+      font-size: 16px;
+    }
+    #board {
+      display: grid;
+      justify-content: center;
+      margin-top: 20px;
+      gap: 2px;
+    }
+    .cell {
+      width: 30px;
+      height: 30px;
+      background: #444;
+      color: white;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      user-select: none;
+    }
+    .revealed {
+      background: #888;
+      cursor: default;
+    }
+    .flagged {
+      background: #444;
+      color: yellow;
+    }
+  </style>
+</head>
+<body>
+  <h1>💣 Mine Sweeper</h1>
+  <div id="controls">
+    <label for="level">Difficulty:</label>
+    <select id="level">
+      <option value="easy">Easy (8×8, 10 mines)</option>
+      <option value="medium">Medium (10×10, 20 mines)</option>
+      <option value="hard">Hard (12×12, 35 mines)</option>
+    </select>
+    <button onclick="startGame()">Start Game</button>
+  </div>
+  <div id="board"></div>
+  <p id="status"></p>
+
+  <script>
+    const board = document.getElementById("board");
+    const status = document.getElementById("status");
+    let size = 8;
+    let mineCount = 10;
+    let cells = [];
+
+    function startGame() {
+      const level = document.getElementById("level").value;
+      if (level === "easy") { size = 8; mineCount = 10; }
+      else if (level === "medium") { size = 10; mineCount = 20; }
+      else if (level === "hard") { size = 12; mineCount = 35; }
+
+      board.style.gridTemplateColumns = `repeat(${size}, 30px)`;
+      cells = [];
+      board.innerHTML = "";
+      status.textContent = "";
+
+      for (let i = 0; i < size * size; i++) {
+        const cell = document.createElement("div");
+        cell.classList.add("cell");
+        cell.dataset.index = i;
+        board.appendChild(cell);
+        cells.push(cell);
+      }
+
+      placeMines();
+    }
+
+    function placeMines() {
+      let minesPlaced = 0;
+      while (minesPlaced < mineCount) {
+        const index = Math.floor(Math.random() * cells.length);
+        if (!cells[index].classList.contains("mine")) {
+          cells[index].classList.add("mine");
+          minesPlaced++;
+        }
+      }
+    }
+
+    function revealCell(cell) {
+      if (cell.classList.contains("revealed") || cell.classList.contains("flagged")) return;
+      cell.classList.add("revealed");
+
+      if (cell.classList.contains("mine")) {
+        cell.textContent = "💣";
+        status.textContent = "Game Over!";
+        revealAllMines();
+        return;
+      }
+
+      const index = parseInt(cell.dataset.index);
+      const neighbors = getNeighbors(index);
+      const count = neighbors.filter(i => cells[i].classList.contains("mine")).length;
+      cell.textContent = count > 0 ? count : "";
+
+      if (count === 0) {
+        neighbors.forEach(i => revealCell(cells[i]));
+      }
+    }
+
+    function getNeighbors(index) {
+      const x = index % size;
+      const y = Math.floor(index / size);
+      const neighbors = [];
+      for (let dx = -1; dx <= 1; dx++) {
+        for (let dy = -1; dy <= 1; dy++) {
+          if (dx === 0 && dy === 0) continue;
+          const nx = x + dx;
+          const ny = y + dy;
+          if (nx >= 0 && nx < size && ny >= 0 && ny < size) {
+            neighbors.push(ny * size + nx);
+          }
+        }
+      }
+      return neighbors;
+    }
+
+    function revealAllMines() {
+      cells.forEach(cell => {
+        if (cell.classList.contains("mine")) {
+          cell.textContent = "💣";
+          cell.classList.add("revealed");
+        }
+      });
+    }
+
+    board.addEventListener("click", e => {
+      if (e.target.classList.contains("cell")) {
+        revealCell(e.target);
+      }
+    });
+
+    board.addEventListener("contextmenu", e => {
+      e.preventDefault();
+      const cell = e.target;
+      if (cell.classList.contains("cell") && !cell.classList.contains("revealed")) {
+        cell.classList.toggle("flagged");
+        cell.textContent = cell.classList.contains("flagged") ? "🚩" : "";
+      }
+    });
+
+    startGame();
+  </script>
+</body>
+</html>
+
+
